@@ -1,8 +1,13 @@
 import crypto from 'node:crypto';
 
-const SESSION_SECRET =
-  process.env.SESSION_SECRET ||
-  'aesthetic-revos-dev-hmac-secret-change-in-production-2026';
+// Never ship a known signing key. Local sessions use a process-random key and expire on restart.
+const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+
+function assertSessionSecretConfigured() {
+  if (process.env.NODE_ENV === 'production' && (!process.env.SESSION_SECRET || Buffer.byteLength(process.env.SESSION_SECRET) < 32)) {
+    throw new Error('SESSION_SECRET must contain at least 32 bytes in production.');
+  }
+}
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
 
@@ -84,6 +89,7 @@ export function verifyPassword(password, storedHash) {
 }
 
 export function signSessionToken(user) {
+  assertSessionSecretConfigured();
   const payload = {
     sub: user.id,
     org_id: user.org_id,
@@ -101,6 +107,7 @@ export function signSessionToken(user) {
 }
 
 export function verifySessionToken(token) {
+  assertSessionSecretConfigured();
   if (!token || typeof token !== 'string' || !token.includes('.')) return null;
   const [encoded, sig] = token.split('.');
   if (!encoded || !sig) return null;
