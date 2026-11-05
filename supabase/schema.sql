@@ -1,9 +1,15 @@
 -- Aesthetic Revenue OS — Production PostgreSQL Schema & Strict Multi-Tenant RLS
--- Deploy in Supabase SQL Editor when moving from local/synthetic demo to production Postgres.
--- NON-CLINICAL BOUNDARY: Schema stores operational inquiry, booking, visit-recency,
--- non-clinical spend, membership counts, and workflow attribution ONLY. Never add PHI/chart columns.
+-- Target Supabase Project Ref: wgwsnroilyyuzwgrlxhg
+-- Audited against supabase/agent-skills (supabase + supabase-postgres-best-practices):
+--   1. Non-exposed `private` schema for SECURITY DEFINER RLS helper with `set search_path = ''`
+--   2. Cached `(select auth.uid())` & `(select private.user_has_org_role(...))` initPlan patterns
+--   3. Explicit `to authenticated` role scoping + both `USING` and `WITH CHECK` on mutations
+--   4. Explicit B-tree indexes on every foreign key & RLS filter column
+-- NON-CLINICAL BOUNDARY: Operational inquiry, booking, visit-recency, non-clinical spend,
+-- membership counts, and workflow attribution ONLY. Never add PHI/clinical chart columns.
 
 create extension if not exists pgcrypto;
+create schema if not exists private;
 
 create table if not exists public.organizations (
   id text primary key,
@@ -136,7 +142,7 @@ create table if not exists public.csv_imports (
 
 create table if not exists public.audit_logs (
   id text primary key,
-  org_id text not null,
+  org_id text not null references public.organizations(id) on delete cascade,
   actor_email text not null,
   actor_role text not null,
   action text not null,
@@ -144,21 +150,42 @@ create table if not exists public.audit_logs (
   created_at timestamptz not null default now()
 );
 
--- Helper function enforcing strict tenant isolation via Supabase Auth
-create or replace function public.user_has_org_role(target_org text, allowed_roles text[])
+-- Foreign-key & RLS filter indexes (per supabase-postgres-best-practices)
+create index if not exists org_memberships_auth_org_idx on public.org_memberships (auth_user_id, org_id);
+create index if not exists org_memberships_org_id_idx on public.org_memberships (org_id);
+create index if not exists locations_org_id_idx on public.locations (org_id);
+create index if not exists leads_org_id_idx on public.leads (org_id);
+create index if not exists leads_location_id_idx on public.leads (location_id);
+create index if not exists customers_org_id_idx on public.customers (org_id);
+create index if not exists customers_location_id_idx on public.customers (location_id);
+create index if not exists memberships_org_id_idx on public.memberships (org_id);
+create index if not exists memberships_location_id_idx on public.memberships (location_id);
+create index if not exists workflow_tasks_org_id_idx on public.workflow_tasks (org_id);
+create index if not exists workflow_tasks_location_id_idx on public.workflow_tasks (location_id);
+create index if not exists csv_imports_org_id_idx on public.csv_imports (org_id);
+create index if not exists audit_logs_org_created_idx on public.audit_logs (org_id, created_at desc);
+
+-- Private-schema SECURITY DEFINER helper enforcing tenant isolation & role check
+create or replace function private.user_has_org_role(target_org text, allowed_roles text[])
 returns boolean
 language sql
 security definer
 stable
+set search_path = ''
 as $$
   select exists (
     select 1
     from public.org_memberships m
     where m.org_id = target_org
-      and m.auth_user_id = auth.uid()
+      and m.auth_user_id = (select auth.uid())
       and m.role = any(allowed_roles)
   );
 $$;
+
+revoke all on schema private from public, anon;
+grant usage on schema private to authenticated;
+revoke execute on function private.user_has_org_role(text, text[]) from public, anon;
+grant execute on function private.user_has_org_role(text, text[]) to authenticated;
 
 alter table public.organizations enable row level security;
 alter table public.org_memberships enable row level security;
@@ -170,50 +197,85 @@ alter table public.workflow_tasks enable row level security;
 alter table public.csv_imports enable row level security;
 alter table public.audit_logs enable row level security;
 
--- Tenant-isolated read policies
+-- Tenant-isolated RLS policies (explicit `to authenticated` + `(select ...)` initPlan caching)
 create policy "tenant_read_orgs" on public.organizations for select
-  using (public.user_has_org_role(id, array['owner','operator','viewer']));
+  to authenticated
+  using ((select private.user_has_org_role(id, array['owner','operator','viewer'])));
+
+create policy "tenant_update_orgs" on public.organizations for update
+  to authenticated
+  using ((select private.user_has_org_role(id, array['owner'])))
+  with check ((select private.user_has_org_role(id, array['owner'])));
+
+create policy "tenant_read_org_memberships" on public.org_memberships for select
+  to authenticated
+  using (
+    auth_user_id = (select auth.uid())
+    or (select private.user_has_org_role(org_id, array['owner','operator']))
+  );
+
+create policy "tenant_manage_org_memberships" on public.org_memberships for all
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner'])))
+  with check ((select private.user_has_org_role(org_id, array['owner'])));
 
 create policy "tenant_read_locations" on public.locations for select
-  using (public.user_has_org_role(org_id, array['owner','operator','viewer']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator','viewer'])));
 
 create policy "tenant_write_locations" on public.locations for all
-  using (public.user_has_org_role(org_id, array['owner','operator']))
-  with check (public.user_has_org_role(org_id, array['owner','operator']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator'])))
+  with check ((select private.user_has_org_role(org_id, array['owner','operator'])));
 
 create policy "tenant_read_leads" on public.leads for select
-  using (public.user_has_org_role(org_id, array['owner','operator','viewer']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator','viewer'])));
 
 create policy "tenant_write_leads" on public.leads for all
-  using (public.user_has_org_role(org_id, array['owner','operator']))
-  with check (public.user_has_org_role(org_id, array['owner','operator']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator'])))
+  with check ((select private.user_has_org_role(org_id, array['owner','operator'])));
 
 create policy "tenant_read_customers" on public.customers for select
-  using (public.user_has_org_role(org_id, array['owner','operator','viewer']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator','viewer'])));
 
 create policy "tenant_write_customers" on public.customers for all
-  using (public.user_has_org_role(org_id, array['owner','operator']))
-  with check (public.user_has_org_role(org_id, array['owner','operator']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator'])))
+  with check ((select private.user_has_org_role(org_id, array['owner','operator'])));
 
 create policy "tenant_read_memberships" on public.memberships for select
-  using (public.user_has_org_role(org_id, array['owner','operator','viewer']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator','viewer'])));
 
 create policy "tenant_write_memberships" on public.memberships for all
-  using (public.user_has_org_role(org_id, array['owner','operator']))
-  with check (public.user_has_org_role(org_id, array['owner','operator']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator'])))
+  with check ((select private.user_has_org_role(org_id, array['owner','operator'])));
 
 create policy "tenant_read_workflows" on public.workflow_tasks for select
-  using (public.user_has_org_role(org_id, array['owner','operator','viewer']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator','viewer'])));
 
 create policy "tenant_write_workflows" on public.workflow_tasks for all
-  using (public.user_has_org_role(org_id, array['owner','operator']))
-  with check (public.user_has_org_role(org_id, array['owner','operator']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator'])))
+  with check ((select private.user_has_org_role(org_id, array['owner','operator'])));
 
 create policy "tenant_read_imports" on public.csv_imports for select
-  using (public.user_has_org_role(org_id, array['owner','operator','viewer']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator','viewer'])));
 
 create policy "tenant_write_imports" on public.csv_imports for insert
-  with check (public.user_has_org_role(org_id, array['owner','operator']));
+  to authenticated
+  with check ((select private.user_has_org_role(org_id, array['owner','operator'])));
 
 create policy "tenant_read_audit" on public.audit_logs for select
-  using (public.user_has_org_role(org_id, array['owner','operator']));
+  to authenticated
+  using ((select private.user_has_org_role(org_id, array['owner','operator'])));
+
+create policy "tenant_insert_audit" on public.audit_logs for insert
+  to authenticated
+  with check ((select private.user_has_org_role(org_id, array['owner','operator','viewer'])));
