@@ -16,7 +16,8 @@ const SCHEMAS = {
       stage: ['stage', 'status', 'funnel_stage'],
       estimated_value: ['estimated_value', 'est_value', 'expected_value', 'package_interest_value'],
       marketing_consent: ['marketing_consent', 'consent', 'sms_opt_in', 'opt_in'],
-      opted_out: ['opted_out', 'unsubscribed', 'opt_out', 'dnc']
+      opted_out: ['opted_out', 'unsubscribed', 'opt_out', 'dnc'],
+      coordinator: ['coordinator', 'assigned_to', 'owner', 'staff', 'rep', 'concierge']
     }
   },
   customers: {
@@ -251,6 +252,17 @@ export function validateAndPreviewCsv({
       const rawStage = sanitizeString(getVal('stage') || 'new', 40).toLowerCase();
       const stage = allowedStages.includes(rawStage) ? rawStage : 'new';
 
+      const rawCreatedAt = getVal('created_at');
+      let isoCreatedAt = new Date().toISOString();
+      if (rawCreatedAt) {
+        const parsedCreated = new Date(rawCreatedAt);
+        if (Number.isNaN(parsedCreated.getTime())) {
+          invalidRows.push({ line: lineNum, reason: `Invalid created_at date "${rawCreatedAt}"` });
+          continue;
+        }
+        isoCreatedAt = parsedCreated.toISOString();
+      }
+
       validRecords.push({
         external_id: extId || `csv-lead-${Date.now()}-${r}`,
         location_id: matchedLoc.id,
@@ -258,15 +270,14 @@ export function validateAndPreviewCsv({
         email,
         phone,
         channel: sanitizeString(getVal('channel') || 'CSV Upload', 60),
-        created_at: getVal('created_at')
-          ? new Date(getVal('created_at')).toISOString()
-          : new Date().toISOString(),
+        created_at: isoCreatedAt,
         first_response_minutes: respMin,
         followup_touches: Math.max(0, Number(getVal('followup_touches')) || 0),
         stage,
         estimated_value: Math.max(0, Number(getVal('estimated_value')) || 650),
         marketing_consent: parseBool(getVal('marketing_consent'), true),
         opted_out: parseBool(getVal('opted_out'), false),
+        coordinator: sanitizeString(getVal('coordinator') || '', 80) || null,
         is_synthetic: false,
         data_source: 'csv_import'
       });

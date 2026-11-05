@@ -265,3 +265,108 @@ test('5. Human Approval Gate, Opt-Out Protection & Provable ROI Receipt Rule', a
     );
   });
 });
+
+test('6. Tenant-isolated Executive Report, Retention/Membership Intelligence & Coordinator Funnel', async () => {
+  await withTestServer(async ({ req }) => {
+    const loginB = await req('/api/auth/login', {
+      method: 'POST',
+      body: { email: 'owner@radiance-demo.example', password: 'TenantTwo2026!' }
+    });
+    const ovB = await req('/api/overview', { token: loginB.json.token });
+    assert.equal(ovB.status, 200);
+
+    // Tenant B executive report must NEVER leak Tenant A studio names
+    const reportJson = JSON.stringify(ovB.json.executive_report);
+    assert.ok(!reportJson.includes('Houston River Oaks'), 'Executive report leaked Tenant A studio');
+    assert.ok(!reportJson.includes('Nashville Gulch'), 'Executive report leaked Tenant A studio');
+    assert.ok(reportJson.includes('Miami Brickell Flagship'));
+
+    // Tenant A includes location funnel, team performance, retention & membership intelligence
+    const loginA = await req('/api/auth/login', {
+      method: 'POST',
+      body: { demo_persona: 'owner' }
+    });
+    const ovA = await req('/api/overview', { token: loginA.json.token });
+    assert.equal(ovA.json.funnel.by_location.length, 8);
+    assert.ok(ovA.json.funnel.team_performance.length >= 4);
+    assert.ok(ovA.json.retention_intelligence.total_customers_tracked > 0);
+    assert.ok(ovA.json.membership_intelligence.total_mrr_usd > 0);
+  });
+});
+
+test('7. Configurable Baseline & Attribution Window Enforcement', async () => {
+  await withTestServer(async ({ req, store }) => {
+    const owner = await req('/api/auth/login', {
+      method: 'POST',
+      body: { demo_persona: 'owner' }
+    });
+    const token = owner.json.token;
+
+    const patchRes = await req('/api/settings', {
+      method: 'PATCH',
+      token,
+      body: {
+        attribution_window_days: 14,
+        baseline_period_label: 'Custom Pilot Baseline',
+        baseline_inquiry_to_consult_pct: 25
+      }
+    });
+    assert.equal(patchRes.status, 200);
+    assert.equal(patchRes.json.settings.attribution_window_days, 14);
+    assert.equal(patchRes.json.baseline_period_label, 'Custom Pilot Baseline');
+
+    // Inject an out-of-window settled task (60 days after initiation vs 14d window) and verify exclusion
+    const db = store.load();
+    db.workflow_tasks.push({
+      id: 'wf-stale-window-test',
+      org_id: 'org-lumina-demo',
+      location_id: 'loc-hou',
+      category: 'lead_recovery',
+      title: 'Out of window test',
+      target_record_id: 'ld-101',
+      recipient_name: 'Test',
+      marketing_consent: true,
+      opted_out: false,
+      owner_name: 'Ops',
+      approval_status: 'approved',
+      action_initiated_at: '2026-08-01T10:00:00Z',
+      updated_at: '2026-10-15T10:00:00Z',
+      lifecycle_stage: 'revenue_collected',
+      estimated_value: 5000,
+      collected_revenue: 5000,
+      receipt_reference: 'POS-STALE-999',
+      draft_message: 'Test',
+      is_synthetic: true
+    });
+    store.persist();
+
+    const ov = await req('/api/overview', { token });
+    assert.ok(
+      !ov.json.roi.verified_ledger.some((r) => r.receipt_reference === 'POS-STALE-999'),
+      'Out-of-window receipt must be excluded from verified ROI'
+    );
+    assert.ok(
+      ov.json.roi.data_warnings.some((w) => w.includes('outside the 14-day attribution window'))
+    );
+  });
+});
+
+test('8. Modular Integration Adapter Readiness & Honest Credential Reporting', async () => {
+  await withTestServer(async ({ req }) => {
+    const owner = await req('/api/auth/login', {
+      method: 'POST',
+      body: { demo_persona: 'owner' }
+    });
+    const token = owner.json.token;
+
+    const csvCheck = await req('/api/integrations/universal_csv/check', { token });
+    assert.equal(csvCheck.status, 200);
+    assert.equal(csvCheck.json.connection_state, 'ready_live');
+
+    const blvdCheck = await req('/api/integrations/boulevard/check', { token });
+    assert.equal(blvdCheck.status, 200);
+    assert.equal(blvdCheck.json.connection_state, 'missing_credentials');
+    assert.ok(blvdCheck.json.missing_env_vars.includes('BOULEVARD_API_KEY'));
+  });
+});
+

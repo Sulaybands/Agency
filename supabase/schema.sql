@@ -63,6 +63,7 @@ create table if not exists public.leads (
   collected_amount numeric(12,2) default 0,
   marketing_consent boolean not null default false,
   opted_out boolean not null default false,
+  coordinator text default '',
   is_synthetic boolean not null default false,
   data_source text not null default 'csv_import',
   created_at timestamptz not null default now()

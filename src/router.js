@@ -9,10 +9,13 @@ import {
   computeLocationMetrics,
   detectOpportunities,
   computeConsultationFunnel,
+  computeRetentionIntelligence,
+  computeMembershipIntelligence,
   computeProvableRoi,
   generateWeeklyExecutiveReport
 } from './engine.js';
 import { validateAndPreviewCsv } from './csvImporter.js';
+import { listIntegrationAdapters, checkIntegrationReadiness } from './integrations/adapters.js';
 import { draftApprovedCommunication, getLlmStatus } from './llm.js';
 
 function parseJsonBody(req) {
@@ -229,6 +232,17 @@ export function createApiHandler(store) {
           locations: slice.locations
         });
 
+        const retentionIntelligence = computeRetentionIntelligence({
+          org: slice.org,
+          customers: slice.customers,
+          locations: slice.locations
+        });
+
+        const membershipIntelligence = computeMembershipIntelligence({
+          locations: slice.locations,
+          memberships: slice.memberships
+        });
+
         const roi = computeProvableRoi({
           org: slice.org,
           opportunities,
@@ -258,6 +272,8 @@ export function createApiHandler(store) {
           location_metrics: locationMetrics,
           opportunities,
           funnel,
+          retention_intelligence: retentionIntelligence,
+          membership_intelligence: membershipIntelligence,
           leads: slice.leads,
           customers: slice.customers,
           memberships: slice.memberships,
@@ -265,7 +281,7 @@ export function createApiHandler(store) {
           roi,
           weekly_trends: slice.weekly_trends,
           executive_report: executiveReport,
-          integrations: slice.integrations,
+          integrations: listIntegrationAdapters(),
           csv_imports: slice.csv_imports,
           team_users: slice.users
         });
@@ -677,11 +693,22 @@ export function createApiHandler(store) {
         return sendJson(res, 200, { ok: true, audit_logs: slice.audit_logs });
       }
 
-      // Organization Settings update
+      // Modular Integration Adapter Readiness Check
+      const integrationCheckMatch = pathname.match(/^\/api\/integrations\/([^/]+)\/check$/);
+      if (integrationCheckMatch && method === 'GET') {
+        if (!requirePerm('read:dashboard')) return;
+        const adapterId = decodeURIComponent(integrationCheckMatch[1]);
+        const result = checkIntegrationReadiness(adapterId);
+        return sendJson(res, result.ok ? 200 : 404, result);
+      }
+
+      // Organization Settings & Baseline update
       if (pathname === '/api/settings' && method === 'PATCH') {
         if (!requirePerm('manage:org')) return;
         const body = await parseJsonBody(req);
         const orgRecord = db.organizations.find((o) => o.id === session.org_id);
+        orgRecord.baseline = orgRecord.baseline || {};
+
         if (body.sla_target_minutes !== undefined) {
           orgRecord.settings.sla_target_minutes = Math.max(1, Number(body.sla_target_minutes) || 15);
         }
@@ -697,15 +724,44 @@ export function createApiHandler(store) {
             Number(body.attribution_window_days) || 30
           );
         }
+        if (body.baseline_period_label !== undefined) {
+          orgRecord.baseline_period_label = sanitizeString(body.baseline_period_label, 120);
+        }
+        if (body.baseline_avg_response_min !== undefined) {
+          orgRecord.baseline.avg_response_minutes = Math.max(
+            1,
+            Number(body.baseline_avg_response_min) || 120
+          );
+        }
+        if (body.baseline_inquiry_to_consult_pct !== undefined) {
+          const pctVal = Math.min(100, Math.max(0, Number(body.baseline_inquiry_to_consult_pct) || 0));
+          orgRecord.baseline.inquiry_to_consult_rate = Math.round(pctVal * 10) / 1000;
+        }
+        if (body.baseline_membership_penetration_pct !== undefined) {
+          const penVal = Math.min(100, Math.max(0, Number(body.baseline_membership_penetration_pct) || 0));
+          orgRecord.baseline.membership_penetration_rate = Math.round(penVal * 10) / 1000;
+        }
+        if (body.baseline_manual_ops_hours !== undefined) {
+          orgRecord.baseline.manual_ops_hours_per_week = Math.max(
+            0,
+            Number(body.baseline_manual_ops_hours) || 0
+          );
+        }
+
         store.persist();
         store.appendAudit({
           org_id: session.org_id,
           actor_email: session.email,
           actor_role: session.role,
           action: 'ORG_SETTINGS_UPDATED',
-          metadata: orgRecord.settings
+          metadata: { settings: orgRecord.settings, baseline: orgRecord.baseline }
         });
-        return sendJson(res, 200, { ok: true, settings: orgRecord.settings });
+        return sendJson(res, 200, {
+          ok: true,
+          settings: orgRecord.settings,
+          baseline: orgRecord.baseline,
+          baseline_period_label: orgRecord.baseline_period_label
+        });
       }
 
       // Data Deletion Procedure: Purge Tenant Imported Data (Owner Only)

@@ -179,7 +179,24 @@ function renderExecutiveCenter(ov) {
     )
     .join('');
 
+  const bc = ov.roi.baseline_comparison || {};
+  const formulas = ov.roi.calculation_formulas || {};
   document.getElementById('roiLedgerDetails').innerHTML = `
+    <div class="grid-3" style="margin-bottom:10px;">
+      <div style="padding:8px 10px; background:var(--surface-subtle); border:1px solid var(--border); border-radius:6px; font-size:12px;">
+        <strong>Inquiry→Consult vs. Baseline:</strong>
+        <span class="mono">${bc.current_inquiry_to_consult_pct ?? 'N/A'}%</span> vs. <span class="mono">${bc.baseline_inquiry_to_consult_pct ?? 'Missing'}%</span>
+        (${bc.inquiry_to_consult_lift_pts !== null && bc.inquiry_to_consult_lift_pts !== undefined ? `${bc.inquiry_to_consult_lift_pts >= 0 ? '+' : ''}${bc.inquiry_to_consult_lift_pts} pts` : 'Configure baseline'})
+      </div>
+      <div style="padding:8px 10px; background:var(--surface-subtle); border:1px solid var(--border); border-radius:6px; font-size:12px;">
+        <strong>Membership Pen. vs. Baseline:</strong>
+        <span class="mono">${bc.current_membership_penetration_pct ?? 0}%</span> vs. <span class="mono">${bc.baseline_membership_penetration_pct ?? 'Missing'}%</span>
+      </div>
+      <div style="padding:8px 10px; background:var(--surface-subtle); border:1px solid var(--border); border-radius:6px; font-size:12px;">
+        <strong>Manual Ops Time Reduced:</strong>
+        <span class="mono">~${bc.estimated_weekly_admin_hours_saved ?? 0} hrs/wk</span> (${ov.roi.attribution_window_days || 30}d attribution window)
+      </div>
+    </div>
     <div class="table-wrap">
       <table>
         <thead>
@@ -188,7 +205,13 @@ function renderExecutiveCenter(ov) {
         <tbody>${ledgerRows || '<tr><td colspan="4">No receipt-verified settlements recorded yet.</td></tr>'}</tbody>
       </table>
     </div>
-    <div style="margin-top:10px; font-size:11.5px; color:var(--ink-muted);">
+    <div style="margin-top:10px; font-size:11px; color:var(--ink-secondary); background:var(--surface-subtle); padding:8px 10px; border-radius:6px; border:1px solid var(--border);">
+      <strong>Calculation Methodology:</strong>
+      ${Object.entries(formulas)
+        .map(([k, v]) => `<div><span class="mono">${esc(k)}:</span> ${esc(v)}</div>`)
+        .join('')}
+    </div>
+    <div style="margin-top:8px; font-size:11.5px; color:var(--ink-muted);">
       ${ov.roi.data_warnings.map((w) => `• ${esc(w)}`).join('<br/>')}
     </div>
   `;
@@ -344,7 +367,7 @@ function renderFunnelAndLeads(ov) {
       <div style="margin-bottom:12px;">
         <div style="display:flex; justify-content:space-between; font-size:12.5px;">
           <strong>${esc(s.stage)}</strong>
-          <span class="mono">${s.count} (${s.pct_of_total}% of total · ${s.step_conversion_pct}% step conv)</span>
+          <span class="mono">${s.count} (${s.pct_of_total}% total · ${s.step_conversion_pct}% step${s.dropoff_count ? ` · -${s.dropoff_count} drop-off` : ''})</span>
         </div>
         <div class="funnel-bar-track"><div class="funnel-bar-fill" style="width:${s.pct_of_total}%;"></div></div>
       </div>`
@@ -369,6 +392,57 @@ function renderFunnelAndLeads(ov) {
     <p style="font-size:12px; color:var(--ink-secondary);">
       Directly reflects actual tenant lead records. Sub-15-minute response consistently drives multi-fold higher consultation attendance and conversion.
     </p>
+  `;
+
+  document.getElementById('funnelByLocationWrap').innerHTML = `
+    <table>
+      <thead>
+        <tr><th>Studio</th><th>Leads</th><th>Booked</th><th>Attended</th><th>Converted</th><th>Conv %</th><th>Avg Resp</th></tr>
+      </thead>
+      <tbody>
+        ${(ov.funnel.by_location || [])
+          .map(
+            (r) => `
+          <tr>
+            <td><strong>${esc(r.name)}</strong></td>
+            <td class="mono">${r.leads}</td>
+            <td class="mono">${r.booked}</td>
+            <td class="mono">${r.attended}</td>
+            <td class="mono">${r.converted}</td>
+            <td class="mono" style="font-weight:700;">${r.conversion_pct}%</td>
+            <td class="mono">${r.avg_response_minutes === null ? 'Unanswered' : `${r.avg_response_minutes}m`}</td>
+          </tr>`
+          )
+          .join('')}
+      </tbody>
+    </table>
+  `;
+
+  document.getElementById('teamPerfTableWrap').innerHTML = `
+    <table>
+      <thead>
+        <tr><th>Coordinator / Pod</th><th>Assigned</th><th>Avg Resp</th><th>Booked %</th><th>Sale %</th></tr>
+      </thead>
+      <tbody>
+        ${(ov.funnel.team_performance || [])
+          .map(
+            (t) => `
+          <tr>
+            <td><strong>${esc(t.coordinator)}</strong></td>
+            <td class="mono">${t.leads_assigned}</td>
+            <td class="mono">${t.avg_response_minutes === null ? 'Unanswered' : `${t.avg_response_minutes}m`}</td>
+            <td class="mono">${t.booked_pct}%</td>
+            <td class="mono" style="font-weight:700;">${t.converted_pct}%</td>
+          </tr>`
+          )
+          .join('') || '<tr><td colspan="5">No coordinator assignments in source dataset.</td></tr>'}
+      </tbody>
+    </table>
+    ${
+      ov.funnel.missing_coordinator_leads_count > 0
+        ? `<div style="font-size:11px; color:var(--ink-muted); margin-top:6px;">Data completeness note: ${ov.funnel.missing_coordinator_leads_count} lead(s) omitted coordinator assignment in source export and are excluded from staff rankings.</div>`
+        : ''
+    }
   `;
 
   const locMap = new Map(ov.locations.map((l) => [l.id, l.name]));
@@ -400,23 +474,51 @@ function renderFunnelAndLeads(ov) {
 
 function renderRetentionAndMemberships(ov) {
   const locMap = new Map(ov.locations.map((l) => [l.id, l.name]));
+  const ret = ov.retention_intelligence || {};
+  const mem = ov.membership_intelligence || {};
+  const seg = ret.segments || {};
+
+  document.getElementById('retentionKpiStrip').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">Repeat-Visit Guest Share</div>
+      <div class="kpi-val">${ret.repeat_visit_rate_pct ?? 0}%</div>
+      <div class="kpi-note">${ret.repeat_visit_count ?? 0} repeat vs. ${ret.single_visit_count ?? 0} single-visit</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Single vs. Repeat Avg Spend</div>
+      <div class="kpi-val">${ret.avg_single_visit_spend_usd != null ? fmtUsd(ret.avg_single_visit_spend_usd) : 'N/A'} → ${ret.avg_repeat_customer_spend_usd != null ? fmtUsd(ret.avg_repeat_customer_spend_usd) : 'N/A'}</div>
+      <div class="kpi-note">Non-clinical historical spend ledger</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Eligible Inactive (${ret.inactivity_threshold_days || 110}d+)</div>
+      <div class="kpi-val">${(seg.eligible_reactivation_threshold_to_179d || 0) + (seg.deep_lapsed_180d_plus || 0)} Guests</div>
+      <div class="kpi-note">${seg.excluded_opted_out_or_no_consent || 0} opted-out/no-consent excluded</div>
+    </div>
+    <div class="kpi-card" style="background:var(--accent-soft);">
+      <div class="kpi-label">30d Membership Retention</div>
+      <div class="kpi-val" style="color:var(--accent);">${mem.group_monthly_retention_pct ?? 0}%</div>
+      <div class="kpi-note">Net 30d growth: ${(mem.net_member_growth_30d || 0) >= 0 ? '+' : ''}${mem.net_member_growth_30d || 0} members (${mem.group_penetration_pct ?? 0}% pen.)</div>
+    </div>
+  `;
+
   document.getElementById('membershipTableWrap').innerHTML = `
     <table>
       <thead>
-        <tr><th>Studio</th><th>Plan</th><th>Price</th><th>Active Members</th><th>MRR</th><th>30d New</th><th>30d Cancelled</th><th>Eligible Non-Members</th></tr>
+        <tr><th>Studio</th><th>Plan</th><th>Price</th><th>Active Members</th><th>Penetration</th><th>30d Retention</th><th>MRR</th><th>30d New / Cancel</th><th>Eligible Non-Members</th></tr>
       </thead>
       <tbody>
-        ${ov.memberships
+        ${(mem.by_location || ov.memberships)
           .map(
             (m) => `
           <tr>
-            <td><strong>${esc(locMap.get(m.location_id) || m.location_id)}</strong></td>
+            <td><strong>${esc(m.location_name || locMap.get(m.location_id) || m.location_id)}</strong></td>
             <td>${esc(m.plan_name)}</td>
             <td class="mono">${fmtUsd(m.monthly_price)}</td>
             <td class="mono">${m.active_members}</td>
-            <td class="mono" style="font-weight:700;">${fmtUsd(m.active_members * m.monthly_price)}</td>
-            <td class="mono" style="color:var(--accent);">+${m.new_enrollments_30d}</td>
-            <td class="mono" style="color:var(--danger);">-${m.cancellations_30d}</td>
+            <td class="mono">${m.penetration_pct ?? 0}%</td>
+            <td class="mono">${m.monthly_retention_pct ?? 0}%</td>
+            <td class="mono" style="font-weight:700;">${fmtUsd(m.mrr_usd ?? m.active_members * m.monthly_price)}</td>
+            <td class="mono"><span style="color:var(--accent);">+${m.new_enrollments_30d}</span> / <span style="color:var(--danger);">-${m.cancellations_30d}</span></td>
             <td class="mono">${m.eligible_non_members}</td>
           </tr>`
           )
@@ -569,18 +671,31 @@ function renderIntegrationsAndCsv(ov) {
   document.getElementById('integrationsCatalogWrap').innerHTML = ov.integrations
     .map(
       (intg) => `
-      <div style="border-bottom:1px solid var(--border); padding:9px 0;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <strong>${esc(intg.platform)}</strong>
-          <span class="badge ${intg.status === 'LIVE_IMPLEMENTED' ? 'badge-green' : 'badge-amber'}">${esc(intg.status)}</span>
+      <div style="border-bottom:1px solid var(--border); padding:10px 0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+          <strong>${esc(intg.name)}</strong>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <span class="badge ${intg.is_live ? 'badge-green' : 'badge-amber'}">${esc(intg.status)}</span>
+            <button class="btn btn-sm intg-check-btn" data-id="${esc(intg.id)}">Check Adapter</button>
+          </div>
         </div>
-        <div style="font-size:11.5px; color:var(--ink-secondary); margin-top:3px;">
-          <strong>Auth:</strong> ${esc(intg.auth_method)} · <strong>Cost:</strong> ${esc(intg.api_cost)}<br/>
-          <strong>Limitations:</strong> ${esc(intg.limitations)}
+        <div style="font-size:11.5px; color:var(--ink-secondary); margin-top:4px; line-height:1.45;">
+          <strong>Auth &amp; Permissions:</strong> ${esc(intg.auth_requirements)} (${esc(intg.required_permissions)})<br/>
+          <strong>Available Data:</strong> ${esc(intg.available_data)}<br/>
+          <strong>API Cost / Tier:</strong> ${esc(intg.api_costs_and_tier)}<br/>
+          <strong>Sync &amp; Failure Handling:</strong> ${esc(intg.sync_method)} · ${esc(intg.failure_handling)}<br/>
+          <strong>Limitations:</strong> ${esc(intg.data_limitations)}
         </div>
       </div>`
     )
     .join('');
+
+  document.querySelectorAll('.intg-check-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const { data } = await apiFetch(`/api/integrations/${encodeURIComponent(btn.dataset.id)}/check`);
+      toast(data.message || data.error || 'Checked adapter status');
+    });
+  });
 }
 
 function renderProspects() {
@@ -647,6 +762,17 @@ function renderSettingsAndAudit(ov) {
   document.getElementById('setSlaMin').value = ov.organization.settings?.sla_target_minutes ?? 15;
   document.getElementById('setInactiveDays').value = ov.organization.settings?.inactivity_threshold_days ?? 110;
   document.getElementById('setAttrDays').value = ov.organization.settings?.attribution_window_days ?? 30;
+  document.getElementById('setBaselineLabel').value = ov.organization.baseline_period_label || '';
+  document.getElementById('setBaseResp').value = ov.organization.baseline?.avg_response_minutes ?? 214;
+  document.getElementById('setBaseConsultPct').value =
+    ov.organization.baseline?.inquiry_to_consult_rate != null
+      ? Math.round(ov.organization.baseline.inquiry_to_consult_rate * 1000) / 10
+      : 31;
+  document.getElementById('setBaseMemPct').value =
+    ov.organization.baseline?.membership_penetration_rate != null
+      ? Math.round(ov.organization.baseline.membership_penetration_rate * 1000) / 10
+      : 11.8;
+  document.getElementById('setBaseManualHrs').value = ov.organization.baseline?.manual_ops_hours_per_week ?? 38;
   document.getElementById('llmStatusText').textContent = `${ov.llm_status.provider} (${ov.llm_status.model}) — Core KPIs & ROI 100% deterministic`;
 
   document.getElementById('teamUsersTableWrap').innerHTML = `
@@ -931,7 +1057,7 @@ async function init() {
     }
   });
 
-  // Settings, Purge & Audit
+  // Settings, Baseline, Purge & Audit
   document.getElementById('settingsForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const { data } = await apiFetch('/api/settings', {
@@ -939,15 +1065,47 @@ async function init() {
       body: {
         sla_target_minutes: Number(document.getElementById('setSlaMin').value),
         inactivity_threshold_days: Number(document.getElementById('setInactiveDays').value),
-        attribution_window_days: Number(document.getElementById('setAttrDays').value)
+        attribution_window_days: Number(document.getElementById('setAttrDays').value),
+        baseline_period_label: document.getElementById('setBaselineLabel').value,
+        baseline_avg_response_min: Number(document.getElementById('setBaseResp').value),
+        baseline_inquiry_to_consult_pct: Number(document.getElementById('setBaseConsultPct').value),
+        baseline_membership_penetration_pct: Number(document.getElementById('setBaseMemPct').value),
+        baseline_manual_ops_hours: Number(document.getElementById('setBaseManualHrs').value)
       }
     });
     if (data.ok) {
       await loadAllPlatformData();
-      toast('Saved organization thresholds & recalculated opportunities');
+      toast('Saved organization thresholds & baseline comparison');
     } else {
       toast(data.error || 'Permission denied');
     }
+  });
+
+  document.querySelectorAll('.demo-step-btn').forEach((btn) => {
+    btn.addEventListener('click', () => switchView(btn.dataset.target));
+  });
+
+  document.getElementById('downloadRoiCsvBtn').addEventListener('click', () => {
+    if (!state.overview) return;
+    const roi = state.overview.roi;
+    const lines = [
+      'stage_or_record,category,action_initiated_at,receipt_reference,amount_usd,notes',
+      `STAGE_1_IDENTIFIED_OPPORTUNITY,pipeline,,,${roi.stages.identified_opportunity_usd},"Raw identified leaks (EXCLUDED from collected ROI)"`,
+      `STAGE_2_ESTIMATED_RECOVERABLE,pipeline,,,${roi.stages.estimated_opportunity_usd},"Conservative conversion-weighted estimate"`,
+      `STAGE_3_ACTIONS_INITIATED,workflow,,,${roi.stages.actions_initiated_est_usd},"${roi.stages.actions_initiated_count} human-approved workflow(s)"`,
+      `STAGE_4_APPOINTMENTS_BOOKED,workflow,,,${roi.stages.appointments_booked_est_usd},"${roi.stages.appointments_booked_count} booked consultation(s)"`,
+      `STAGE_6_REVENUE_COLLECTED_VERIFIED,settled_pos,,,${roi.stages.revenue_collected_verified_usd},"Verified POS receipts within ${roi.attribution_window_days}d window"`,
+      ...roi.verified_ledger.map(
+        (r) =>
+          `"${String(r.title).replace(/"/g, '""')}",${r.category},${r.action_initiated_at || ''},${r.receipt_reference},${r.collected_revenue},"${r.is_synthetic ? 'SYNTHETIC_DEMO' : 'VERIFIED'}"`
+      )
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'provable-roi-attribution-ledger.csv';
+    a.click();
+    toast('Downloaded Provable ROI Ledger (.csv)');
   });
 
   document.getElementById('purgeImportedBtn').addEventListener('click', async () => {
