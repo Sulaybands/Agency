@@ -1,0 +1,14 @@
+{
+  "name": "aesthetic-revenue-os",
+  "version": "1.0.0",
+  "description": "Aesthetic Revenue OS — Multi-Location Aesthetics & MedSpa Revenue Operations Platform",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "test": "node --test tests/platform.test.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

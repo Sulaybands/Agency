@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aesthetic Revenue OS — Multi-Location Aesthetics Revenue Operations Platform</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <!-- Global Top Header -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark">AR</span>
+        <div>
+          <span class="brand-name">Aesthetic Revenue OS</span>
+          <span style="color:#9ca3af; font-size:12px; margin-left:6px;">by Camberline (Working Brand)</span>
+        </div>
+        <span class="synthetic-pill" id="demoNoticeBadge">SYNTHETIC DEMO ENVIRONMENT</span>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="btn btn-sm" id="toggleMarketingBtn">Commercial Overview &amp; ROI Calculator</button>
+        <button class="btn btn-sm btn-primary" id="enterPlatformBtn">Open Live Platform Demo</button>
+        <select id="personaSwitcher" style="width:auto; background:#1e2329; color:#f9fafb; border-color:#374151; font-size:12px; padding:4px 8px;">
+          <option value="owner">Demo Persona: Elena Vance (Owner / CEO)</option>
+          <option value="operator">Demo Persona: Marcus Sterling (VP Ops / Operator)</option>
+          <option value="viewer">Demo Persona: Claire Lin (Analyst · Read-Only RBAC)</option>
+          <option value="tenant_b">Isolation Test: Tenant B (Radiance Group)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- =======================================================================
+       SURFACE 1: PUBLIC COMMERCIAL WEBSITE, OFFER PACKAGING & ROI CALCULATOR
+       ======================================================================= -->
+  <div id="marketingSurface" class="marketing-shell hidden">
+    <div class="card" style="padding:32px;">
+      <div class="eyebrow">Multi-Location Aesthetics Revenue Operations · 5 to 50+ Clinics</div>
+      <h1 style="font-size:30px; max-width:820px; line-height:1.2; margin-bottom:12px;">
+        Find, Recover, and Verify Lost Revenue Across Every Clinic Location—Without Replacing Your POS or EMR.
+      </h1>
+      <p style="font-size:15px; color:var(--ink-secondary); max-width:800px; margin-bottom:20px;">
+        Boulevard, Zenoti, and Aesthetic Record run front-desk checkout—but across 5–50 studios, uncontacted inquiries, slow consultation follow-up, 110+ day single-visit drop-offs, and uneven membership conversion silently leak six figures per quarter. <strong>Aesthetic Revenue OS</strong> connects your non-clinical exports in 48 hours, coordinates human-approved recovery workflows, and separates raw pipeline from POS-verified collected revenue.
+      </p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="heroLaunchDemoBtn">Launch 8-Location Interactive Demo →</button>
+        <a href="#commercialRoiSection" class="btn">Model Your Group's Baseline Leakage</a>
+      </div>
+
+      <div class="grid-3" style="margin-top:26px; margin-bottom:0;">
+        <div class="kpi-card">
+          <div class="kpi-label">2026 Industry Benchmark (100+ Brands)</div>
+          <div class="kpi-val">&lt; 15 Min SLA</div>
+          <div class="kpi-note">Clinics answering inquiries in &lt;15m consistently rank in the top growth half vs. 4h–24d laggards (AmSpa 2026).</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Single-Visit vs. Repeat Wallet Gap</div>
+          <div class="kpi-val">$355 vs. $1,681</div>
+          <div class="kpi-note">Published H1 2026 cohort gap between 1-visit drop-offs and returning aesthetic guests.</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Membership Retention Lift</div>
+          <div class="kpi-val">2.5x Spend</div>
+          <div class="kpi-note">Members spend 2.5x non-members and retain +35 percentage points higher across multi-site cohorts.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Commercial ROI Estimator -->
+    <div class="card" id="commercialRoiSection" style="padding:26px;">
+      <div class="card-header">
+        <div>
+          <div class="eyebrow">Transparent Baseline Estimator (Non-Clinical Operational Model)</div>
+          <h2>Multi-Location Revenue Opportunity &amp; Pilot Sizing Calculator</h2>
+        </div>
+        <span class="badge badge-amber">ESTIMATE ONLY · NOT VERIFIED COLLECTED REVENUE</span>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="field">
+            <label>Number of Clinic Locations: <span class="mono" id="mLocVal">10</span></label>
+            <input type="range" id="mLocInput" min="3" max="50" value="10" />
+          </div>
+          <div class="field">
+            <label>Monthly New Inquiries per Location: <span class="mono" id="mLeadsVal">95</span></label>
+            <input type="range" id="mLeadsInput" min="25" max="300" step="5" value="95" />
+          </div>
+          <div class="field">
+            <label>Unanswered / Slow (&gt;60m) Inquiry Share (%): <span class="mono" id="mSlowVal">34%</span></label>
+            <input type="range" id="mSlowInput" min="10" max="75" value="34" />
+          </div>
+          <div class="field">
+            <label>Inactive Non-Member Guests (&gt;110d) per Location: <span class="mono" id="mInactiveVal">140</span></label>
+            <input type="range" id="mInactiveInput" min="30" max="500" step="10" value="140" />
+          </div>
+        </div>
+
+        <div style="background:var(--surface-subtle); border:1px solid var(--border); border-radius:10px; padding:18px;">
+          <div style="font-size:12px; color:var(--ink-muted); font-weight:600;">ESTIMATED ANNUAL RECOVERABLE OPPORTUNITY RANGE (CONSERVATIVE):</div>
+          <div class="mono" style="font-size:28px; font-weight:700; color:var(--accent); margin:6px 0;" id="mEstRange">$0 – $0 / yr</div>
+          <div style="font-size:12px; color:var(--ink-secondary); margin-bottom:14px;" id="mFormulaExplain"></div>
+
+          <div style="border-top:1px solid var(--border); padding-top:12px;">
+            <div style="font-size:11.5px; font-weight:700; color:var(--ink);">RECOMMENDED COMMERCIAL DEPLOYMENT HYPOTHESIS:</div>
+            <div style="font-size:14px; font-weight:650; margin-top:4px;" id="mRecommendedTier"></div>
+            <div style="font-size:12px; color:var(--ink-secondary); margin-top:3px;" id="mTierNote"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Offer Packaging & Credential Login Box -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <h2>Commercial Offer: Revenue Recovery &amp; Intelligence System</h2>
+        </div>
+        <ul style="padding-left:18px; color:var(--ink-secondary); display:flex; flex-direction:column; gap:6px;">
+          <li><strong>Phase 1 Paid Proof-of-Value Pilot (3–5 Studios · 30–45 Days):</strong> $5,000–$8,500 setup + $1,500–$2,500/mo. Universal CSV/export audit, baseline lock, Lead Recovery, Retention &amp; Membership Opportunity Inbox, and POS-verified ROI ledger.</li>
+          <li><strong>Multi-Location Group Rollout (6–20 Studios):</strong> $15,000–$32,000 implementation + $2,500–$5,500/mo ongoing platform &amp; operations SLA.</li>
+          <li><strong>Enterprise / PE Platform (21–50+ Studios):</strong> $35,000–$75,000+ custom rollout + $6,000–$10,000+/mo with custom API adapters &amp; board reporting.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2>Direct Credential Sign-In (Or Use Top Persona Selector)</h2>
+        </div>
+        <form id="loginForm">
+          <div class="field">
+            <label>Work Email</label>
+            <input type="email" id="loginEmail" value="ceo@lumina-demo.example" required />
+          </div>
+          <div class="field">
+            <label>Password</label>
+            <input type="password" id="loginPassword" value="DemoOwner2026!" required />
+          </div>
+          <button type="submit" class="btn btn-dark" style="width:100%;">Sign In to Tenant Workspace</button>
+          <div style="font-size:11.5px; color:var(--ink-muted); margin-top:8px;">
+            Demo credentials: <code>ceo@lumina-demo.example</code> / <code>DemoOwner2026!</code> (Owner) · <code>cfo-readonly@lumina-demo.example</code> / <code>DemoViewer2026!</code> (Viewer RBAC) · <code>owner@radiance-demo.example</code> / <code>TenantTwo2026!</code> (Isolated Tenant B).
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- =======================================================================
+       SURFACE 2: AUTHENTICATED MULTI-LOCATION ENTERPRISE PLATFORM
+       ======================================================================= -->
+  <div id="platformSurface" class="app-layout">
+    <aside class="sidebar">
+      <div>
+        <div style="padding:6px 10px 12px; border-bottom:1px solid var(--border); margin-bottom:8px;">
+          <div style="font-size:11px; color:var(--ink-muted);">ACTIVE TENANT</div>
+          <div style="font-weight:700; font-size:13px; margin-top:2px;" id="sidebarOrgName">Loading...</div>
+          <div style="margin-top:5px; display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+            <span class="badge badge-green" id="sidebarUserRole">OWNER</span>
+            <span style="font-size:11.5px; color:var(--ink-secondary);" id="sidebarUserName"></span>
+          </div>
+        </div>
+
+        <div class="nav-group-label">Intelligence &amp; ROI</div>
+        <button class="side-btn active" data-view="exec">Executive Command Center</button>
+        <button class="side-btn" data-view="locations">Location Intelligence <span class="badge badge-blue" id="navLocCount">0</span></button>
+        <button class="side-btn" data-view="opportunities">Opportunity Inbox <span class="badge badge-amber" id="navOppCount">0</span></button>
+
+        <div class="nav-group-label">Core Operating Modules</div>
+        <button class="side-btn" data-view="funnel">Lead Recovery &amp; Funnel</button>
+        <button class="side-btn" data-view="retention">Retention &amp; Memberships</button>
+        <button class="side-btn" data-view="workflows">Workflow &amp; Approvals <span class="badge badge-green" id="navWfCount">0</span></button>
+
+        <div class="nav-group-label">Data, Growth &amp; Governance</div>
+        <button class="side-btn" data-view="integrations">CSV Import &amp; Integrations</button>
+        <button class="side-btn" data-view="prospects">Prospecting Engine (10 Real)</button>
+        <button class="side-btn" data-view="settings">Settings, RBAC &amp; Audit Log</button>
+      </div>
+
+      <div style="padding:10px; background:rgba(255,255,255,0.6); border:1px solid var(--border); border-radius:6px; font-size:11px; color:var(--ink-secondary);">
+        <strong>Non-Clinical Boundary:</strong><br/>
+        Ingests operational lead, booking, recency &amp; membership data only. Zero clinical charts, diagnoses, or auto-sent messages.
+      </div>
+    </aside>
+
+    <main class="content-area">
+      <div class="notice-banner" id="syntheticNoticeBanner">
+        <strong>[SYNTHETIC DEMO NOTICE]</strong> Viewing clearly labeled synthetic multi-location demonstration records for <em>Lumina Aesthetics Collective</em>. Identified opportunities are never reported as collected revenue; only receipt-verified post-action settlements enter Collected Revenue.
+      </div>
+
+      <!-- VIEW 1: EXECUTIVE COMMAND CENTER -->
+      <section class="app-view" id="view-exec">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div class="eyebrow">Module F + Section 4 Provable ROI Engine</div>
+            <h1>Executive Command Center</h1>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-sm" id="downloadRoiCsvBtn">⬇ Download ROI Ledger (.csv)</button>
+            <button class="btn btn-dark btn-sm" id="downloadExecReportBtn">⬇ Download Weekly Executive Summary (.md)</button>
+          </div>
+        </div>
+
+        <div class="card" style="padding:12px 16px; background:var(--surface-subtle);">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div style="font-size:12px;">
+              <strong>&lt;5-Minute Guided Demo Flow:</strong> Walk a buyer from raw export to receipt-verified ROI in 4 clicks:
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn btn-sm demo-step-btn" data-target="integrations">1. Import CSV</button>
+              <button class="btn btn-sm demo-step-btn" data-target="opportunities">2. Inspect Leaks</button>
+              <button class="btn btn-sm demo-step-btn" data-target="workflows">3. Approve &amp; Log Receipt</button>
+              <button class="btn btn-sm demo-step-btn" data-target="locations">4. Compare Studios</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-4" id="execKpiGrid"></div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Provable ROI Attribution Ledger (Strict 6-Stage Separation)</h2>
+              <div style="font-size:12px; color:var(--ink-muted);">
+                Baseline: <span id="roiBaselineLabel"></span> · Identified opportunities are strictly excluded from Verified Collected Revenue.
+              </div>
+            </div>
+            <span class="badge badge-green">DEFENSIBLE ATTRIBUTION</span>
+          </div>
+          <div class="roi-strip" id="roiWaterfallStrip"></div>
+          <div id="roiLedgerDetails"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h2>6-Part Weekly Executive Report</h2>
+              <span class="badge badge-blue">AUTO-COMPILED</span>
+            </div>
+            <div id="execWeeklySummary" style="display:flex; flex-direction:column; gap:10px; font-size:12.5px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Weekly Multi-Location Performance Trend</h2>
+              <span class="badge badge-amber">SYNTHETIC SERIES</span>
+            </div>
+            <div class="table-wrap" id="weeklyTrendTableWrap"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: LOCATION INTELLIGENCE -->
+      <section class="app-view hidden" id="view-locations">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px;">
+          <div>
+            <div class="eyebrow">Cross-Studio Benchmarking</div>
+            <h1>Location Performance Intelligence</h1>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>All Clinic Locations Compared</h2>
+            <span style="font-size:12px; color:var(--ink-muted);">Highlights response-time laggards, uncontacted inquiries &amp; membership gaps</span>
+          </div>
+          <div class="table-wrap" id="locationsTableWrap"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>+ Add Organization Clinic Location</h2>
+          </div>
+          <form id="addLocationForm" class="grid-4" style="margin-bottom:0; align-items:end;">
+            <div class="field" style="margin-bottom:0;">
+              <label>Location Code</label>
+              <input type="text" id="locCode" placeholder="e.g. MIA- DESIGN" required />
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label>Studio Name</label>
+              <input type="text" id="locName" placeholder="e.g. Miami Design District" required />
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <label>State</label>
+              <input type="text" id="locState" value="FL" maxlength="2" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Add Studio Location</button>
+          </form>
+        </div>
+      </section>
+
+      <!-- VIEW 3: OPPORTUNITY INBOX -->
+      <section class="app-view hidden" id="view-opportunities">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div class="eyebrow">Module A · Evidence-Backed Revenue Opportunity Intelligence</div>
+            <h1>Opportunity Inbox</h1>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <select id="oppModuleFilter" style="width:auto;">
+              <option value="ALL">All Modules</option>
+              <option value="Lead Recovery">Lead Recovery</option>
+              <option value="Consultation Conversion">Consultation Conversion</option>
+              <option value="Retention Intelligence">Retention Intelligence</option>
+              <option value="Membership Intelligence">Membership Intelligence</option>
+              <option value="Location Performance">Location Performance</option>
+            </select>
+          </div>
+        </div>
+        <div id="opportunityListContainer"></div>
+      </section>
+
+      <!-- VIEW 4: LEAD RECOVERY & CONSULTATION FUNNEL -->
+      <section class="app-view hidden" id="view-funnel">
+        <div class="eyebrow">Modules B &amp; C · Inquiry Response &amp; Conversion Waterfall</div>
+        <h1 style="margin-bottom:16px;">Lead Recovery &amp; Consultation Conversion Intelligence</h1>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h2>5-Stage Group Consultation Funnel</h2>
+            </div>
+            <div id="funnelStagesContainer"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Speed-to-Lead Conversion Impact (Source Data Verified)</h2>
+            </div>
+            <div id="speedCohortContainer"></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h2>Location-Level Funnel Comparison</h2>
+            </div>
+            <div class="table-wrap" id="funnelByLocationWrap"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Coordinator / Team Performance (Where Supported by Data)</h2>
+            </div>
+            <div class="table-wrap" id="teamPerfTableWrap"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Inbound Inquiry &amp; Lead Recovery Ledger</h2>
+            <span class="badge badge-green">OPT-OUT ENFORCED</span>
+          </div>
+          <div class="table-wrap" id="leadsTableWrap"></div>
+        </div>
+      </section>
+
+      <!-- VIEW 5: RETENTION & MEMBERSHIP INTELLIGENCE -->
+      <section class="app-view hidden" id="view-retention">
+        <div class="eyebrow">Modules D &amp; E · Non-Clinical Repeat Cadence &amp; Recurring MRR</div>
+        <h1 style="margin-bottom:16px;">Customer Retention &amp; Membership Intelligence</h1>
+
+        <div class="grid-4" id="retentionKpiStrip"></div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Location Membership Performance &amp; Eligible Repeat Non-Member Pool</h2>
+          </div>
+          <div class="table-wrap" id="membershipTableWrap"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Customer Inactivity &amp; Reactivation Ledger (Zero Clinical / Medical Inference)</h2>
+            <span class="badge badge-blue">NON-CLINICAL VISIT SUMMARY ONLY</span>
+          </div>
+          <div class="table-wrap" id="customersTableWrap"></div>
+        </div>
+      </section>
+
+      <!-- VIEW 6: WORKFLOW & HUMAN APPROVAL CENTER -->
+      <section class="app-view hidden" id="view-workflows">
+        <div class="eyebrow">Human-in-the-Loop Execution &amp; Receipt Attribution</div>
+        <h1 style="margin-bottom:6px;">Workflow &amp; Communications Approval Center</h1>
+        <p style="color:var(--ink-secondary); margin-bottom:16px;">
+          No customer communication is ever sent automatically. Authorized <code>owner</code> and <code>operator</code> roles review drafts, verify consent, approve initiation, and attach POS receipt references when bookings convert to collected revenue.
+        </p>
+        <div id="workflowTasksContainer"></div>
+      </section>
+
+      <!-- VIEW 7: UNIVERSAL CSV IMPORT & INTEGRATIONS -->
+      <section class="app-view hidden" id="view-integrations">
+        <div class="eyebrow">Section 5 · Zero-Friction Onboarding &amp; Modular Adapters</div>
+        <h1 style="margin-bottom:16px;">Universal CSV Import Engine &amp; Integration Center</h1>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Universal Two-Step CSV Importer (Validate &amp; Preview → Confirm Commit)</h2>
+              <div style="font-size:12px; color:var(--ink-muted);">
+                Auto-maps columns, deduplicates against existing records, rejects invalid rows, and actively blocks prohibited clinical/PHI columns.
+              </div>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn btn-sm" id="loadSampleLeadsCsvBtn">Load Sample Valid Leads CSV</button>
+              <button class="btn btn-sm btn-danger" id="loadPhiBlockedCsvBtn">Test PHI/Clinical Column Blocker</button>
+            </div>
+          </div>
+
+          <div class="grid-3" style="margin-bottom:10px;">
+            <div class="field">
+              <label>Record Type</label>
+              <select id="csvEntityType">
+                <option value="leads">Leads / Consultation Inquiries</option>
+                <option value="customers">Customers (Non-Clinical Visit/Spend)</option>
+                <option value="memberships">Location Membership Summary</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Upload .CSV File (Optional)</label>
+              <input type="file" id="csvFileInput" accept=".csv,text/csv" />
+            </div>
+            <div class="field">
+              <label>Import Filename Label</label>
+              <input type="text" id="csvFilenameInput" value="clinic_export_batch.csv" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>CSV Content (Paste or Load Above)</label>
+            <textarea id="csvTextarea" rows="6" class="mono" style="font-size:12px;"></textarea>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center;">
+            <button class="btn btn-dark" id="previewCsvBtn">1. Validate &amp; Preview CSV</button>
+            <button class="btn btn-primary hidden" id="commitCsvBtn">2. Confirm &amp; Commit Valid Records</button>
+          </div>
+
+          <div id="csvPreviewResult" style="margin-top:14px;"></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h2>Recorded CSV Import History</h2>
+            </div>
+            <div class="table-wrap" id="csvHistoryTableWrap"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Platform Integration Status (Honest Technical Matrix)</h2>
+            </div>
+            <div id="integrationsCatalogWrap"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 8: PROSPECTING ENGINE -->
+      <section class="app-view hidden" id="view-prospects">
+        <div class="eyebrow">Section 10 · Publicly Verified Multi-Location MedSpa Research</div>
+        <h1 style="margin-bottom:6px;">Internal Prospecting Engine (5–65+ Location Aesthetics Groups)</h1>
+        <p style="color:var(--ink-secondary); margin-bottom:16px;">
+          Every account below is populated from publicly verified web sources (verified 2026-11-05) with clickable source URLs, real leadership, and deterministic fit ranking. Generates personalized drafts for your manual review—never auto-sends.
+        </p>
+
+        <div id="prospectDraftModal" class="card hidden" style="border:2px solid var(--accent);">
+          <div class="card-header">
+            <h2 id="draftModalTitle">Personalized Executive Outreach Draft (Human Send Only)</h2>
+            <button class="btn btn-sm" id="closeDraftModalBtn">Close</button>
+          </div>
+          <pre id="draftModalContent" class="mono" style="white-space:pre-wrap; background:var(--surface-subtle); padding:12px; border-radius:6px; border:1px solid var(--border); font-size:12px;"></pre>
+          <div style="margin-top:10px; display:flex; justify-content:flex-end;">
+            <button class="btn btn-primary btn-sm" id="copyProspectDraftBtn">Copy Draft for Manual Review</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Ranked Target Accounts (Verified Public Sources)</h2>
+          </div>
+          <div class="table-wrap" id="prospectsTableWrap"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>+ Log Newly Researched Aesthetics Group</h2>
+          </div>
+          <form id="addProspectForm" class="grid-3" style="margin-bottom:0;">
+            <div class="field"><label>Company Name *</label><input type="text" id="prName" required /></div>
+            <div class="field"><label>Website URL *</label><input type="url" id="prWeb" placeholder="https://..." required /></div>
+            <div class="field"><label>Approx. Locations *</label><input type="number" id="prLocs" value="12" min="2" required /></div>
+            <div class="field"><label>Geographic Footprint</label><input type="text" id="prFootprint" placeholder="e.g. TX, FL, AZ" /></div>
+            <div class="field"><label>Verified Public Leadership</label><input type="text" id="prLead" placeholder="Name &amp; Title (from press/site)" /></div>
+            <div class="field"><label>Verification Source URL *</label><input type="url" id="prSource" placeholder="https://..." required /></div>
+            <div class="field" style="grid-column: span 2;"><label>Buying Triggers / Signals</label><input type="text" id="prTriggers" placeholder="e.g. Recent PE add-on acquisition, hiring regional ops director" /></div>
+            <div class="field" style="justify-content:flex-end;"><button type="submit" class="btn btn-dark">Save Verified Account</button></div>
+          </form>
+        </div>
+      </section>
+
+      <!-- VIEW 9: SETTINGS, RBAC, AUDIT LOG & DATA DELETION -->
+      <section class="app-view hidden" id="view-settings">
+        <div class="eyebrow">Section 7 · Tenant Isolation, RBAC, Audit Trail &amp; Data Deletion</div>
+        <h1 style="margin-bottom:16px;">Organization Settings, Security Controls &amp; Audit Log</h1>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h2>Operational Thresholds &amp; Attribution Rules (Owner Role Required)</h2>
+            </div>
+            <form id="settingsForm">
+              <div class="field">
+                <label>Speed-to-Lead Target SLA (Minutes)</label>
+                <input type="number" id="setSlaMin" min="1" max="120" value="15" />
+              </div>
+              <div class="field">
+                <label>Customer Inactivity Threshold (Days)</label>
+                <input type="number" id="setInactiveDays" min="30" max="365" value="110" />
+              </div>
+              <div class="field">
+                <label>POS Receipt Attribution Window (Days)</label>
+                <input type="number" id="setAttrDays" min="7" max="90" value="30" />
+              </div>
+              <div style="margin:12px 0 8px; padding-top:10px; border-top:1px solid var(--border); font-size:12px; font-weight:600;">
+                Defined Comparison Baseline (Section 4 Configurable ROI)
+              </div>
+              <div class="field">
+                <label>Baseline Period Label</label>
+                <input type="text" id="setBaselineLabel" placeholder="e.g. Q3 2026 Pre-Pilot Baseline" />
+              </div>
+              <div class="grid-2" style="margin-bottom:0;">
+                <div class="field">
+                  <label>Baseline Avg Response (Min)</label>
+                  <input type="number" id="setBaseResp" min="1" max="10000" value="214" />
+                </div>
+                <div class="field">
+                  <label>Baseline Inquiry→Consult (%)</label>
+                  <input type="number" id="setBaseConsultPct" min="0" max="100" step="0.1" value="31" />
+                </div>
+                <div class="field">
+                  <label>Baseline Membership Pen. (%)</label>
+                  <input type="number" id="setBaseMemPct" min="0" max="100" step="0.1" value="11.8" />
+                </div>
+                <div class="field">
+                  <label>Baseline Manual Ops Hrs/Wk</label>
+                  <input type="number" id="setBaseManualHrs" min="0" max="200" value="38" />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">Save Thresholds &amp; Baseline</button>
+            </form>
+
+            <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+              <h3 style="color:var(--danger);">Data Deletion Procedure (Owner Only)</h3>
+              <p style="font-size:12px; color:var(--ink-secondary); margin:4px 0 10px;">
+                Permanently deletes all CSV-imported leads, customer summaries, and membership rows belonging ONLY to your authenticated tenant while preserving tenant isolation and recording a deletion audit entry.
+              </p>
+              <button class="btn btn-danger btn-sm" id="purgeImportedBtn">Purge All Imported CSV Records for This Tenant</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2>Organization Team &amp; RBAC Matrix</h2>
+            </div>
+            <div class="table-wrap" id="teamUsersTableWrap"></div>
+            <div style="margin-top:14px; font-size:12px; color:var(--ink-secondary);">
+              <strong>LLM Provider Abstraction Status:</strong> <span class="mono" id="llmStatusText"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Immutable Tenant Security &amp; Action Audit Log</h2>
+            <button class="btn btn-sm" id="refreshAuditBtn">Refresh Audit Log</button>
+          </div>
+          <div class="table-wrap" id="auditLogTableWrap"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
